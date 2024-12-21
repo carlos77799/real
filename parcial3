@@ -1,0 +1,221 @@
+#include <iostream>
+using namespace std;
+
+// Definición de la estructura del nodo
+struct nodo {
+    struct nodo *izq;  // Puntero al hijo izquierdo
+    int valor;         // Valor del nodo
+    int altura;       // Altura del nodo
+    struct nodo *der;  // Puntero al hijo derecho
+};
+
+// Inicialización de la raíz del árbol
+struct nodo *raiz = NULL;
+
+// Función para calcular la altura de un nodo
+int calcularaltura(struct nodo *a) {
+    if (a == NULL) return 0;  // Si el nodo es NULL, la altura es 0
+    return a->altura;          // Devuelve la altura del nodo
+}
+
+// Función para calcular el peso (número de nodos) de un subárbol
+int calcularpeso(struct nodo *a) {
+    if (a == NULL) return 0;  // Si el nodo es NULL, el peso es 0
+    return 1 + calcularpeso(a->izq) + calcularpeso(a->der);  // 1 + peso del hijo izquierdo + peso del hijo derecho
+}
+
+// Función para calcular el factor de equilibrio de un nodo
+int calcularequilibrio(struct nodo *a) {
+    if (a == NULL) return 0;  // Si el nodo es NULL, el equilibrio es 0
+    return calcularaltura(a->izq) - calcularaltura(a->der);  // Altura izquierda - altura derecha
+}
+
+// Rotación a la derecha para balancear el árbol
+struct nodo* rotacionderecha(struct nodo *y) {
+    struct nodo *x = y->izq;  // El hijo izquierdo se convierte en el nuevo nodo raíz
+    struct nodo *T2 = x->der;  // Toma el subárbol derecho de x
+
+    x->der = y;                // Realiza la rotación
+    y->izq = T2;              // Asigna el subárbol derecho de x a y
+
+    y->altura = calcularaltura(y);  // Recalcula la altura de y
+    x->altura = calcularaltura(x);  // Recalcula la altura de x
+
+    return x;  // Devuelve el nuevo nodo raíz
+}
+
+// Rotación a la izquierda para balancear el árbol
+struct nodo* rotacionizquierda(struct nodo *x) {
+    struct nodo *y = x->der;  // El hijo derecho se convierte en el nuevo nodo raíz
+    struct nodo *T2 = y->izq;  // Toma el subárbol izquierdo de y
+
+    y->izq = x;                // Realiza la rotación
+    x->der = T2;               // Asigna el subárbol izquierdo de y a x
+
+    x->altura = calcularaltura(x);  // Recalcula la altura de x
+    y->altura = calcularaltura(y);  // Recalcula la altura de y
+
+    return y;  // Devuelve el nuevo nodo raíz
+}
+
+// Función para posicionar un nuevo nodo en el árbol
+void posicionar(struct nodo*& aux, struct nodo*& aux2) {
+    if (aux->valor < aux2->valor) {  // Si el valor del nuevo nodo es menor
+        if (aux2->izq == NULL) {      // Si no hay hijo izquierdo
+            aux2->izq = aux;          // Inserta el nuevo nodo
+            return;
+        } else {
+            aux2 = aux2->izq;         // Mueve al hijo izquierdo
+            posicionar(aux, aux2);    // Llama recursivamente
+        }
+    } else {  // Si el valor del nuevo nodo es mayor o igual
+        if (aux2->der == NULL) {      // Si no hay hijo derecho
+            aux2->der = aux;          // Inserta el nuevo nodo
+            return;
+        } else {
+            aux2 = aux2->der;         // Mueve al hijo derecho
+            posicionar(aux, aux2);    // Llama recursivamente
+        }
+    }
+
+    aux2->altura = calcularaltura(aux2);  // Recalcula la altura del nodo actual
+    int balance = calcularequilibrio(aux2);  // Calcula el equilibrio
+
+    // Rotaciones necesarias para mantener el balance
+    if (balance > 1) {  // Si el árbol está desbalanceado a la izquierda
+        if (aux->valor < aux2->izq->valor) {
+            raiz = rotacionderecha(aux2);  // Rotación simple a la derecha
+        } else {
+            aux2->izq = rotacionizquierda(aux2->izq);  // Rotación izquierda en el hijo izquierdo
+            raiz = rotacionderecha(aux2);  // Luego rotación a la derecha
+        }
+    }
+
+    if (balance < -1) {  // Si el árbol está desbalanceado a la derecha
+        if (aux->valor > aux2->der->valor) {
+            raiz = rotacionizquierda(aux2);  // Rotación simple a la izquierda
+        } else {
+            aux2->der = rotacionderecha(aux2->der);  // Rotación derecha en el hijo derecho
+            raiz = rotacionizquierda(aux2);  // Luego rotación a la izquierda
+        }
+    }
+}
+
+// Función para insertar un nuevo nodo en el árbol
+void insertar() {
+    struct nodo *aux = new nodo();  // Crea un nuevo nodo
+    cout << "Digite el valor del nodo: ";
+    cin >> aux->valor;              // Solicita el valor del nodo
+    aux->izq = aux->der = NULL;     // Inicializa los hijos en NULL
+    aux->altura = 1;                // Inicializa la altura en 1
+
+    if (!raiz) {                    // Si el árbol está vacío
+        raiz = aux;                 // El nuevo nodo se convierte en la raíz
+    } else {
+        struct nodo *aux2 = raiz;   // Si no, busca la posición correcta
+        posicionar(aux, aux2);      // Llama a la función de posicionar
+    }
+}
+
+// Función para recorrer el árbol en orden
+void recorrer(nodo *a) {
+    if (a != NULL) {                // Si el nodo no es NULL
+        recorrer(a->izq);           // Recorre el hijo izquierdo
+        cout << "Valor: " << a->valor << " con altura: " << a->altura << endl;  // Imprime el valor y altura
+        recorrer(a->der);           // Recorre el hijo derecho
+    }
+}
+
+// Función para encontrar el nodo mínimo en un subárbol
+struct nodo* minimo(struct nodo* nodo) {
+    if (nodo->izq == NULL) return nodo;  // Si no hay hijo izquierdo, este es el mínimo
+    return minimo(nodo->izq);            // Llama recursivamente al hijo izquierdo
+}
+
+// Función para eliminar un nodo del árbol
+struct nodo* eliminar(struct nodo* nodo, int clave) {
+    if (nodo == NULL) return nodo;  // Si el nodo es NULL, retorna NULL
+
+    if (clave < nodo->valor) {      // Si la clave es menor, busca en el subárbol izquierdo
+        nodo->izq = eliminar(nodo->izq, clave);
+    } else if (clave > nodo->valor) {  // Si la clave es mayor, busca en el subárbol derecho
+        nodo->der = eliminar(nodo->der, clave);
+    } else {  // Nodo encontrado
+        // Caso 1: Nodo con un solo hijo o sin hijos
+        if (nodo->izq == NULL) {
+            struct nodo* temp = nodo->der;  // Guarda el hijo derecho
+            delete nodo;                     // Elimina el nodo
+            return temp;                     // Retorna el hijo derecho
+        } else if (nodo->der == NULL) {
+            struct nodo* temp = nodo->izq;  // Guarda el hijo izquierdo
+            delete nodo;                     // Elimina el nodo
+            return temp;                     // Retorna el hijo izquierdo
+        }
+
+        // Caso 2: Nodo con dos hijos: obtiene el sucesor inorden
+        struct nodo* temp = minimo(nodo->der);  // Encuentra el mínimo en el subárbol derecho
+        nodo->valor = temp->valor;               // Copia el valor del sucesor al nodo actual
+        nodo->der = eliminar(nodo->der, temp->valor);  // Elimina el sucesor
+    }
+
+    if (nodo == NULL) return nodo;  // Retorna NULL si el nodo se eliminó
+
+    nodo->altura = calcularaltura(nodo);  // Recalcula la altura del nodo
+    int balance = calcularequilibrio(nodo);  // Calcula el equilibrio
+
+    // Rotaciones necesarias para mantener el balance
+    if (balance > 1) {
+        if (calcularequilibrio(nodo->izq) >= 0) {
+            return rotacionderecha(nodo);  // Rotación simple a la derecha
+        } else {
+            nodo->izq = rotacionizquierda(nodo->izq);  // Rotación izquierda en el hijo izquierdo
+            return rotacionderecha(nodo);  // Luego rotación a la derecha
+        }
+    }
+
+    if (balance < -1) {
+        if (calcularequilibrio(nodo->der) <= 0) {
+            return rotacionizquierda(nodo);  // Rotación simple a la izquierda
+        } else {
+            nodo->der = rotacionderecha(nodo->der);  // Rotación derecha en el hijo derecho
+            return rotacionizquierda(nodo);  // Luego rotación a la izquierda
+        }
+    }
+
+    return nodo;  // Retorna el nodo (posiblemente balanceado)
+}
+
+// Función principal
+int main() {
+    int opcion;
+    do {
+        cout << "1. Insertar" << endl;
+        cout << "2. Mostrar" << endl;
+        cout << "3. Eliminar" << endl;
+        cout << "4. Salir" << endl;
+        cout << "Opción: ";
+        cin >> opcion;  // Solicita la opción al usuario
+
+        switch (opcion) {
+            case 1:
+                insertar();  // Llama a la función de insertar
+                break;
+            case 2:
+                cout << "Árbol AVL en orden:" << endl;
+                recorrer(raiz);  // Muestra el árbol
+                break;
+            case 3: {
+                int valor;
+                cout << "Digite el valor a eliminar: ";
+                cin >> valor;  // Solicita el valor a eliminar
+                raiz = eliminar(raiz, valor);  // Llama a la función de eliminar
+                break;
+            }
+            case 4:
+                cout << "Saliendo..." << endl;  // Mensaje de salida
+                break;
+            default:
+                cout << "Opción inválida." << endl;  // Mensaje de opción inválida
+        }
+    } while (opcion != 4);  
+    return 0;  
